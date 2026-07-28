@@ -3,16 +3,22 @@
 
 .DATA
     ; Menu String Definitions (0DH, 0AH = Carriage Return, Line Feed)
-    MENU_MSG    DB 0DH, 0AH, '=========================='
-                DB 0DH, 0AH, '        MAIN MENU         '
-                DB 0DH, 0AH, '=========================='
-                DB 0DH, 0AH, '1. Say Hello'
-                DB 0DH, 0AH, '2. Say Goodbye'
-                DB 0DH, 0AH, '3. Exit'
-                DB 0DH, 0AH, 'Enter your choice (1-3): $'
+    MENU_MSG    DB 0DH, 0AH, '================================'
+                DB 0DH, 0AH, '            MAIN MENU         '
+                DB 0DH, 0AH, '================================'
+                DB 0DH, 0AH, '1. Swmming Pool '
+                DB 0DH, 0AH, '2. Basketball Court'
+                DB 0DH, 0AH, '3. Badminton Court '
+				db 0dh, 0ah, '4. Squash Court'
+				db 0dh, 0ah, '5. Pickleball Court'
+				db 0dh, 0ah, '6. Exit program'
+                DB 0DH, 0AH, 'Enter your choice (1-6): $'
     
-    MSG_HELLO   DB 0DH, 0AH, 'Hello, User!$'
-    MSG_BYE     DB 0DH, 0AH, 'Goodbye, User!$'
+    MSG_SWIMMING   DB 0DH, 0AH, 'You have selected Swmming Pool $'
+    MSG_BASKETBALL DB 0DH, 0AH, 'You have selected Basketball $'
+	MSG_BADMINTON DB 0DH, 0AH, 'You have selected Badminton $'
+	MSG_SQUASH DB 0DH, 0AH, 'You have selected Squash $'
+	MSG_PICKLEBALL DB 0DH, 0AH, 'You have selected Pickleball $'
     MSG_INVALID DB 0DH, 0AH, 'Invalid choice! Please try again.$'
     MSG_EXIT    DB 0DH, 0AH, 'Exiting program...$'
 
@@ -35,9 +41,20 @@ MENU_LOOP:
     ; Compare user input in AL against options
     CMP AL, '1'
     JE  OPTION1
+	
     CMP AL, '2'
     JE  OPTION2
-    CMP AL, '3'
+	
+	CMP AL, '3'
+	JE  OPTION3
+	
+	CMP AL, '4'
+	JE  OPTION4
+	
+	CMP AL, '5'
+	JE  OPTION5
+
+    CMP AL, '6'
     JE  EXIT_PROG
 
     ; If input matches no option, print error message
@@ -47,17 +64,35 @@ MENU_LOOP:
     JMP MENU_LOOP
 
 OPTION1:
-    LEA DX, MSG_HELLO
+    LEA DX, MSG_SWIMMING
     MOV AH, 09H
     INT 21H
     JMP MENU_LOOP       ; Return to menu after executing
 
 OPTION2:
-    LEA DX, MSG_BYE
+    LEA DX, MSG_BASKETBALL
     MOV AH, 09H
     INT 21H
-    JMP MENU_LOOP       ; Return to menu after executing
+    JMP MENU_LOOP       
 
+OPTION3:
+    LEA DX, MSG_BADMINTON
+    MOV AH, 09H
+    INT 21H
+    JMP MENU_LOOP 
+	
+OPTION4:
+    LEA DX, MSG_SQUASH
+    MOV AH, 09H
+    INT 21H
+    JMP MENU_LOOP 
+
+OPTION5:
+    LEA DX, MSG_PICKLEBALL
+    MOV AH, 09H
+    INT 21H
+    JMP MENU_LOOP 
+	
 EXIT_PROG:
     ; Print exit message
     LEA DX, MSG_EXIT
