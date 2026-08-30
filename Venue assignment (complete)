@@ -1,0 +1,1300 @@
+.MODEL SMALL
+.STACK 100H
+
+.DATA
+
+; LOGIN DATA
+ADMIN_USER   DB 'wenjer'
+ADMIN_PASS   DB '1234'
+
+MEMBER_USER  DB 'yuxuan'
+MEMBER_PASS  DB '1111'
+
+; INPUT BUFFERS
+USERNAME DB 20,0,20 DUP(0)
+PASSWORD DB 20,0,20 DUP(0)
+
+; CURRENT USER
+; 1 = ADMIN, 2 = MEMBER
+USER_TYPE DB 0
+
+; USER ID
+; 1 = ADMIN
+; 2 = MEMBER
+CURRENT_USER_ID DB 0
+
+; BOOKING DATA
+; 5 VENUES x 6 TIME SLOTS = 30
+; 0 = AVAILABLE
+; 1 = ADMIN
+; 2 = MEMBER
+BOOKINGS DB 30 DUP(0)
+
+VENUE DB 0
+TIME_SLOT DB 0
+
+; MESSAGES
+TITLE_MSG DB 10,13
+          DB '================================',10,13
+          DB '     *SPORTS BOOKING VENUE*',10,13
+          DB '================================$'
+
+LOGIN_MSG DB 10,13
+          DB 10,13
+          DB 'WELCOME TO SPORTS BOOKING VENUE!!',10,13
+          DB 'PLEASE ENTER ADMIN OR MEMBER USERNAME AND PASSWORD!!',10,13
+          DB '====================================================$'
+
+USER_MSG DB 10,13
+         DB 'Username: $'
+
+PASS_MSG DB 10,13
+         DB 'Password: $'
+
+LOGIN_OK DB 10,13
+         DB 'Login successful!',10,13
+         DB '$'
+
+LOGIN_BAD DB 10,13
+          DB 'Invalid username or password!',10,13
+          DB 'Please try again.',10,13
+          DB '$'
+
+INVALID_MSG DB 10,13
+            DB 'Invalid input. Please choose a valid option.',10,13
+            DB '$'
+
+LOGOUT_MSG DB 10,13
+           DB 'You have logged out.',10,13
+           DB '$'
+
+EXIT_MSG DB 10,13
+         DB 'Do you wish to exit the system? (Y/N): $'
+
+EXIT_YES DB 10,13
+         DB 'Thank you for using the Sports Booking Venue.',10,13
+         DB 'Goodbye!',10,13
+         DB '$'
+
+EXIT_NO DB 10,13
+        DB 'Returning to menu...',10,13
+        DB '$'
+
+; ADMIN MENU (MODIFIED – removed Booking and Manage options)
+ADMIN_MENU DB 10,13
+           DB '================================',10,13
+           DB '          *ADMIN MENU*',10,13
+           DB '================================',10,13
+           DB '1. Booking History',10,13
+           DB '2. Report',10,13
+           DB '3. Logout',10,13
+           DB '4. Exit Program',10,13
+           DB 'Enter choice: $'
+
+; MEMBER MENU 
+MEMBER_MENU DB 10,13
+            DB '=====================================',10,13
+            DB '   *BOOKING VENUE AND HISTORY MENU*',10,13
+            DB '=====================================',10,13
+            DB '1. Venue Booking',10,13
+            DB '2. My Booking History',10,13
+            DB '3. Logout',10,13
+            DB '4. Exit Program',10,13
+            DB 'Enter choice: $'
+
+; VENUE MENU
+VENUE_MENU DB 10,13
+           DB '================================',10,13
+           DB '        SELECT VENUE TYPE',10,13
+           DB '================================',10,13
+           DB '1. Swimming Pool',10,13
+           DB '2. Basketball Court',10,13
+           DB '3. Badminton Court',10,13
+           DB '4. Squash Court',10,13
+           DB '5. Pickleball Court',10,13
+           DB '6. Back',10,13
+           DB 'Enter venue number: $'
+
+; TIME MENU
+TIME_MENU DB 10,13
+          DB '================================',10,13
+          DB '        SELECT TIME SLOT',10,13
+          DB '================================',10,13
+          DB '1. 10 AM - 12 PM',10,13
+          DB '2. 12 PM - 2 PM',10,13
+          DB '3. 2 PM - 4 PM',10,13
+          DB '4. 4 PM - 6 PM',10,13
+          DB '5. 6 PM - 8 PM',10,13
+          DB '6. 8 PM - 10 PM',10,13
+          DB 'Enter time number: $'
+
+; BOOKING MESSAGES
+CONFIRM_MSG DB 10,13
+            DB 'Confirm this booking? (Y/N): $'
+
+BOOKED_MSG DB 10,13
+           DB 'This venue and time slot is already booked!',10,13
+           DB 'Please choose another venue or time slot.',10,13
+           DB '$'
+
+BOOK_OK DB 10,13
+        DB '================================',10,13
+        DB '       BOOKING SUCCESSFUL!',10,13
+        DB '       Duration: 2 HOURS',10,13
+        DB '================================',10,13
+        DB '$'
+
+CANCEL_MSG DB 10,13
+           DB 'Booking cancelled.',10,13
+           DB '$'
+
+; HISTORY MESSAGES
+HISTORY_TITLE DB 10,13,'========== BOOKING HISTORY ==========$'
+
+MY_HIST_TITLE DB 10,13,'========= MY BOOKING HISTORY =========$'
+
+NO_BOOKINGS   DB 10,13,'No bookings found.$'
+
+ENTRY_MSG     DB 10,13,'Venue: $'
+
+TIME_MSG      DB ', Time: $'
+
+; --- User labels for admin history ---
+;"Admin" / "Member"
+USER_ADMIN  DB ' (wenjer)$'    
+USER_MEMBER DB ' (yuxuan)$'    
+
+; --- Enlarged venue name buffers (21 bytes each) ---
+VENUE1 DB 'Swimming Pool$'
+       DB 7 DUP(0)          ; pad to 21 bytes
+VENUE2 DB 'Basketball Court$'
+       DB 4 DUP(0)          ; padding
+VENUE3 DB 'Badminton Court$'
+       DB 5 DUP(0)          ; padding
+VENUE4 DB 'Squash Court$'
+       DB 9 DUP(0)          ; padding
+VENUE5 DB 'Pickleball Court$'
+       DB 3 DUP(0)          ; padding
+
+; Offsets to venue names (now each is 21 bytes)
+VENUE_OFFSETS DW OFFSET VENUE1, OFFSET VENUE2, OFFSET VENUE3, OFFSET VENUE4, OFFSET VENUE5
+
+; --- Enlarged time slot name buffers (21 bytes each) ---
+TIME1 DB '10 AM - 12 PM$'
+      DB 7 DUP(0)
+TIME2 DB '12 PM - 2 PM$'
+      DB 8 DUP(0)
+TIME3 DB '2 PM - 4 PM$'
+      DB 8 DUP(0)
+TIME4 DB '4 PM - 6 PM$'
+      DB 8 DUP(0)
+TIME5 DB '6 PM - 8 PM$'
+      DB 8 DUP(0)
+TIME6 DB '8 PM - 10 PM$'
+      DB 7 DUP(0)
+
+TIME_OFFSETS  DW OFFSET TIME1, OFFSET TIME2, OFFSET TIME3, OFFSET TIME4, OFFSET TIME5, OFFSET TIME6
+
+; ADMIN REPORT
+REPORT_TITLE DB 10,13,'========== ADMIN REPORT ==========$'
+
+TOTAL_MSG DB 10,13,'Total Booked Slots: $'
+
+VENUE_COUNTS DB 5 DUP(0)
+
+REP_V1 DB 10,13,'Swimming Pool: $'
+REP_V2 DB 10,13,'Basketball Court: $'
+REP_V3 DB 10,13,'Badminton Court: $'
+REP_V4 DB 10,13,'Squash Court: $'
+REP_V5 DB 10,13,'Pickleball Court: $'
+
+; --- Management strings (unused but kept for completeness) ---
+MANAGE_MSG   DB 10,13,'===== MANAGE VENUES / TIME SLOTS =====',10,13
+             DB '1. Edit Venue Name',10,13
+             DB '2. Edit Time Slot Name',10,13
+             DB '3. Back to Admin Menu',10,13
+             DB 'Enter choice: $'
+
+EDIT_VENUE_MSG  DB 10,13,'Enter new name for venue (max 20 chars): $'
+EDIT_TIME_MSG   DB 10,13,'Enter new description for time slot (max 20 chars): $'
+NEW_NAME        DB 21,0,21 DUP(0)   ; input buffer for new name
+
+.CODE
+
+MAIN PROC
+
+    MOV AX,@DATA
+    MOV DS,AX
+
+; LOGIN 
+LOGIN_START:
+
+	CALL CLEAR_SCREEN
+
+	MOV AH,09H
+	LEA DX,TITLE_MSG
+    INT 21H
+	
+	MOV AH,09H
+    LEA DX,LOGIN_MSG
+    INT 21H
+
+    MOV AH,09H
+    LEA DX,USER_MSG
+    INT 21H
+
+    MOV AH,0AH
+    LEA DX,USERNAME
+    INT 21H
+
+    MOV AH,09H
+    LEA DX,PASS_MSG
+    INT 21H
+
+    MOV AH,0AH
+    LEA DX,PASSWORD
+    INT 21H
+
+    JMP CHECK_ADMIN
+
+
+; CHECK ADMIN
+
+CHECK_ADMIN:
+
+    CMP USERNAME[1],6
+    JNE CHECK_MEMBER
+
+    CMP USERNAME[2],'w'
+    JNE CHECK_MEMBER
+
+    CMP USERNAME[3],'e'
+    JNE CHECK_MEMBER
+
+    CMP USERNAME[4],'n'
+    JNE CHECK_MEMBER
+
+    CMP USERNAME[5],'j'
+    JNE CHECK_MEMBER
+
+    CMP USERNAME[6],'e'
+    JNE CHECK_MEMBER
+
+    CMP USERNAME[7],'r'
+    JNE CHECK_MEMBER
+
+; Check admin password
+    CMP PASSWORD[1],4
+    JNE CHECK_MEMBER
+
+    CMP PASSWORD[2],'1'
+    JNE CHECK_MEMBER
+
+    CMP PASSWORD[3],'2'
+    JNE CHECK_MEMBER
+
+    CMP PASSWORD[4],'3'
+    JNE CHECK_MEMBER
+
+    CMP PASSWORD[5],'4'
+    JNE CHECK_MEMBER
+
+    JMP LOGIN_ADMIN
+
+
+; CHECK MEMBER
+
+CHECK_MEMBER:
+
+    CMP USERNAME[1],6
+    JNE LOGIN_FAILED
+
+    CMP USERNAME[2],'y'
+    JNE LOGIN_FAILED
+
+    CMP USERNAME[3],'u'
+    JNE LOGIN_FAILED
+
+    CMP USERNAME[4],'x'
+    JNE LOGIN_FAILED
+
+    CMP USERNAME[5],'u'
+    JNE LOGIN_FAILED
+
+    CMP USERNAME[6],'a'
+    JNE LOGIN_FAILED
+
+    CMP USERNAME[7],'n'
+    JNE LOGIN_FAILED
+
+; Check member password
+    CMP PASSWORD[1],4
+    JNE LOGIN_FAILED
+
+    CMP PASSWORD[2],'1'
+    JNE LOGIN_FAILED
+
+    CMP PASSWORD[3],'1'
+    JNE LOGIN_FAILED
+
+    CMP PASSWORD[4],'1'
+    JNE LOGIN_FAILED
+
+    CMP PASSWORD[5],'1'
+    JNE LOGIN_FAILED
+
+    JMP LOGIN_MEMBER
+
+
+; LOGIN FAILED
+
+LOGIN_FAILED:
+
+	CALL CLEAR_SCREEN
+
+	MOV AH,09H
+    LEA DX,LOGIN_BAD
+    INT 21H
+
+	MOV AH,00H
+	INT 16H
+	
+    JMP LOGIN_START
+
+
+; ADMIN LOGIN
+
+LOGIN_ADMIN:
+
+    MOV USER_TYPE,1
+    MOV CURRENT_USER_ID,1
+	
+	CALL CLEAR_SCREEN
+
+    MOV AH,09H
+    LEA DX,LOGIN_OK
+    INT 21H
+	
+	MOV AH,00H
+    INT 16H
+
+    JMP ADMIN_START
+
+
+; MEMBER LOGIN
+
+LOGIN_MEMBER:
+
+    MOV USER_TYPE,2
+    MOV CURRENT_USER_ID,2
+
+	CALL CLEAR_SCREEN
+
+    MOV AH,09H
+    LEA DX,LOGIN_OK
+    INT 21H
+
+	MOV AH,00H
+    INT 16H
+	
+    JMP MEMBER_START
+
+
+; ADMIN MENU 
+
+ADMIN_START:
+
+	CALL CLEAR_SCREEN
+
+    MOV AH,09H
+    LEA DX,ADMIN_MENU
+    INT 21H
+
+    MOV AH,01H
+    INT 21H
+
+    CMP AL,'1'
+    JNE ADMIN_TEST2
+    JMP ADMIN_HISTORY
+
+ADMIN_TEST2:
+    CMP AL,'2'
+    JNE ADMIN_TEST3
+    JMP ADMIN_REPORT
+
+ADMIN_TEST3:
+    CMP AL,'3'
+    JNE ADMIN_TEST4
+    JMP ADMIN_LOGOUT
+
+ADMIN_TEST4:
+    CMP AL,'4'
+    JNE ADMIN_BAD
+    JMP ADMIN_EXIT
+
+ADMIN_BAD:
+	MOV AH,09H
+    LEA DX,INVALID_MSG
+    INT 21H
+    JMP ADMIN_START
+
+
+; ADMIN BOOKING 
+ADMIN_BOOK:
+	CALL CLEAR_SCREEN
+    JMP VENUE_START
+
+; ADMIN HISTORY
+
+ADMIN_HISTORY:
+	CALL CLEAR_SCREEN
+	MOV AH,09H
+    LEA DX,HISTORY_TITLE
+    INT 21H
+    CALL DISPLAY_BOOKINGS_ALL
+	MOV AH,00H
+	INT 16H
+    JMP ADMIN_START
+
+; ADMIN REPORT
+
+ADMIN_REPORT:
+	CALL CLEAR_SCREEN
+    MOV AH,09H
+    LEA DX,REPORT_TITLE
+    INT 21H
+
+; Clear old counts
+    MOV VENUE_COUNTS[0],0
+    MOV VENUE_COUNTS[1],0
+    MOV VENUE_COUNTS[2],0
+    MOV VENUE_COUNTS[3],0
+    MOV VENUE_COUNTS[4],0
+
+    MOV SI,0
+    MOV DI,0
+    MOV CX,5
+
+VENUE_TALLY:
+    PUSH CX
+    MOV CX,6
+
+SLOT_TALLY:
+    CMP BOOKINGS[SI],0
+    JE NO_TALLY
+    INC VENUE_COUNTS[DI]
+
+NO_TALLY:
+    INC SI
+    LOOP SLOT_TALLY
+    INC DI
+    POP CX
+    LOOP VENUE_TALLY
+
+; Print venue statistics
+    MOV AH,09H
+    LEA DX,REP_V1
+    INT 21H
+    MOV AL,VENUE_COUNTS[0]
+    CALL PRINT_NUM
+
+    MOV AH,09H
+    LEA DX,REP_V2
+    INT 21H
+    MOV AL,VENUE_COUNTS[1]
+    CALL PRINT_NUM
+
+    MOV AH,09H
+    LEA DX,REP_V3
+    INT 21H
+    MOV AL,VENUE_COUNTS[2]
+    CALL PRINT_NUM
+
+    MOV AH,09H
+    LEA DX,REP_V4
+    INT 21H
+    MOV AL,VENUE_COUNTS[3]
+    CALL PRINT_NUM
+
+    MOV AH,09H
+    LEA DX,REP_V5
+    INT 21H
+    MOV AL,VENUE_COUNTS[4]
+    CALL PRINT_NUM
+
+
+; Print total bookings
+    MOV AH,09H
+    LEA DX,TOTAL_MSG
+    INT 21H
+    MOV AL,VENUE_COUNTS[0]
+    ADD AL,VENUE_COUNTS[1]
+    ADD AL,VENUE_COUNTS[2]
+    ADD AL,VENUE_COUNTS[3]
+    ADD AL,VENUE_COUNTS[4]
+    CALL PRINT_NUM
+
+	MOV AH,00H
+    INT 16H
+    JMP ADMIN_START
+
+
+; ADMIN LOGOUT
+
+ADMIN_LOGOUT:
+	CALL CLEAR_SCREEN
+    MOV AH,09H
+    LEA DX,LOGOUT_MSG
+    INT 21H
+    MOV USER_TYPE,0
+    MOV CURRENT_USER_ID,0
+	MOV AH,00H
+    INT 16H
+    JMP LOGIN_START
+
+
+; ADMIN EXIT
+
+ADMIN_EXIT:
+
+ADMIN_EXIT_ASK:
+	MOV AH,09H
+    LEA DX,EXIT_MSG
+    INT 21H
+    MOV AH,01H
+    INT 21H
+
+    CMP AL,'Y'
+    JNE ADMIN_EXIT_TEST2
+    JMP ADMIN_EXIT_Y
+
+ADMIN_EXIT_TEST2:
+    CMP AL,'y'
+    JNE ADMIN_EXIT_TEST3
+    JMP ADMIN_EXIT_Y
+
+ADMIN_EXIT_TEST3:
+    CMP AL,'N'
+    JNE ADMIN_EXIT_TEST4
+    JMP ADMIN_EXIT_N
+
+ADMIN_EXIT_TEST4:
+    CMP AL,'n'
+    JNE ADMIN_EXIT_BAD
+    JMP ADMIN_EXIT_N
+
+ADMIN_EXIT_BAD:
+    MOV AH,09H
+    LEA DX,INVALID_MSG
+    INT 21H
+    JMP ADMIN_EXIT_ASK
+
+ADMIN_EXIT_Y:
+	CALL CLEAR_SCREEN
+    MOV AH,09H
+    LEA DX,EXIT_YES
+    INT 21H
+    JMP MAIN_EXIT
+
+ADMIN_EXIT_N:
+	MOV AH,09H
+    LEA DX,EXIT_NO
+    INT 21H
+    JMP ADMIN_START
+
+
+; MEMBER MENU 
+
+MEMBER_START:
+	CALL CLEAR_SCREEN
+    MOV AH,09H
+    LEA DX,MEMBER_MENU
+    INT 21H
+    MOV AH,01H
+    INT 21H
+
+    CMP AL,'1'
+    JNE MEMBER_TEST2
+    JMP MEMBER_BOOK
+
+MEMBER_TEST2:
+    CMP AL,'2'
+    JNE MEMBER_TEST3
+    JMP MEMBER_HISTORY
+
+MEMBER_TEST3:
+    CMP AL,'3'
+    JNE MEMBER_TEST4
+    JMP MEMBER_LOGOUT
+
+MEMBER_TEST4:
+    CMP AL,'4'
+    JNE MEMBER_BAD
+    JMP MEMBER_EXIT
+
+MEMBER_BAD:
+    MOV AH,09H
+    LEA DX,INVALID_MSG
+    INT 21H
+    JMP MEMBER_START
+
+; MEMBER BOOKING
+
+MEMBER_BOOK:
+	CALL CLEAR_SCREEN
+    JMP VENUE_START
+
+; MEMBER HISTORY
+
+MEMBER_HISTORY:
+    CALL CLEAR_SCREEN
+    MOV AH,09H
+    LEA DX,MY_HIST_TITLE
+    INT 21H
+    CALL DISPLAY_BOOKINGS_USER
+    MOV AH,00H
+    INT 16H
+    JMP MEMBER_START
+
+; MEMBER LOGOUT
+
+MEMBER_LOGOUT:
+	CALL CLEAR_SCREEN
+    MOV AH,09H
+    LEA DX,LOGOUT_MSG
+    INT 21H
+    MOV USER_TYPE,0
+    MOV CURRENT_USER_ID,0
+	MOV AH,00H
+    INT 16H
+    JMP LOGIN_START
+
+; MEMBER EXIT
+
+MEMBER_EXIT:
+
+MEMBER_EXIT_ASK:
+    MOV AH,09H
+    LEA DX,EXIT_MSG
+    INT 21H
+    MOV AH,01H
+    INT 21H
+
+    CMP AL,'Y'
+    JNE MEMBER_EXIT_TEST2
+    JMP MEMBER_EXIT_Y
+
+MEMBER_EXIT_TEST2:
+    CMP AL,'y'
+    JNE MEMBER_EXIT_TEST3
+    JMP MEMBER_EXIT_Y
+
+MEMBER_EXIT_TEST3:
+    CMP AL,'N'
+    JNE MEMBER_EXIT_TEST4
+    JMP MEMBER_EXIT_N
+
+MEMBER_EXIT_TEST4:
+    CMP AL,'n'
+    JNE MEMBER_EXIT_BAD
+    JMP MEMBER_EXIT_N
+
+MEMBER_EXIT_BAD:
+    MOV AH,09H
+    LEA DX,INVALID_MSG
+    INT 21H
+    JMP MEMBER_EXIT_ASK
+
+MEMBER_EXIT_Y:
+	CALL CLEAR_SCREEN 
+    MOV AH,09H
+    LEA DX,EXIT_YES
+    INT 21H
+    JMP MAIN_EXIT
+
+MEMBER_EXIT_N:
+    MOV AH,09H
+    LEA DX,EXIT_NO
+    INT 21H
+    JMP MEMBER_START
+
+
+; VENUE MENU (shared by admin & member)
+
+VENUE_START:
+	CALL CLEAR_SCREEN
+    MOV AH,09H
+    LEA DX,VENUE_MENU
+    INT 21H
+    MOV AH,01H
+    INT 21H
+
+    CMP AL,'1'
+    JNE VENUE_TEST2
+    JMP VENUE_ONE
+
+VENUE_TEST2:
+    CMP AL,'2'
+    JNE VENUE_TEST3
+    JMP VENUE_TWO
+
+VENUE_TEST3:
+    CMP AL,'3'
+    JNE VENUE_TEST4
+    JMP VENUE_THREE
+
+VENUE_TEST4:
+    CMP AL,'4'
+    JNE VENUE_TEST5
+    JMP VENUE_FOUR
+
+VENUE_TEST5:
+    CMP AL,'5'
+    JNE VENUE_TEST6
+    JMP VENUE_FIVE
+
+VENUE_TEST6:
+    CMP AL,'6'
+    JNE VENUE_BAD
+    JMP VENUE_BACK
+
+VENUE_BAD:
+    MOV AH,09H
+    LEA DX,INVALID_MSG
+    INT 21H
+    JMP VENUE_START
+
+
+; VENUES
+
+VENUE_ONE:
+    MOV VENUE,1
+    JMP TIME_START
+
+VENUE_TWO:
+    MOV VENUE,2
+    JMP TIME_START
+
+VENUE_THREE:
+    MOV VENUE,3
+    JMP TIME_START
+
+VENUE_FOUR:
+    MOV VENUE,4
+    JMP TIME_START
+
+VENUE_FIVE:
+    MOV VENUE,5
+    JMP TIME_START
+
+; VENUE BACK
+
+VENUE_BACK:
+    CMP USER_TYPE,1
+    JNE VENUE_BACK_MEMBER
+    JMP VENUE_BACK_ADMIN
+
+VENUE_BACK_MEMBER:
+    JMP MEMBER_START
+
+VENUE_BACK_ADMIN:
+    JMP ADMIN_START
+
+
+; TIME MENU
+
+TIME_START:
+	CALL CLEAR_SCREEN
+	MOV AH,09H
+    LEA DX,TIME_MENU
+    INT 21H
+    MOV AH,01H
+    INT 21H
+
+    CMP AL,'1'
+    JB TIME_BAD
+    CMP AL,'6'
+    JA TIME_BAD
+    JMP TIME_VALID
+
+TIME_BAD:
+    MOV AH,09H
+    LEA DX,INVALID_MSG
+    INT 21H
+    JMP TIME_START
+
+TIME_VALID:
+    SUB AL,'0'
+    MOV TIME_SLOT,AL
+    JMP CHECK_SLOT
+
+
+; CHECK SLOT
+
+CHECK_SLOT:
+    MOV AL,VENUE
+    DEC AL
+    MOV BL,6
+    MUL BL
+    MOV BL,TIME_SLOT
+    DEC BL
+    MOV BH,0
+    ADD AX,BX
+    MOV SI,AX
+    MOV AL,BOOKINGS[SI]
+    CMP AL,0
+    JE SLOT_AVAILABLE
+    JMP SLOT_BOOKED
+
+SLOT_AVAILABLE:
+    JMP CONFIRM_START
+
+SLOT_BOOKED:
+    MOV AH,09H
+    LEA DX,BOOKED_MSG
+    INT 21H
+    JMP VENUE_START
+
+
+; CONFIRM BOOKING
+
+CONFIRM_START:
+    MOV AH,09H
+    LEA DX,CONFIRM_MSG
+    INT 21H
+    MOV AH,01H
+    INT 21H
+
+    CMP AL,'Y'
+    JNE CONFIRM_TEST2
+    JMP SAVE_BOOKING
+
+CONFIRM_TEST2:
+    CMP AL,'y'
+    JNE CONFIRM_TEST3
+    JMP SAVE_BOOKING
+
+CONFIRM_TEST3:
+    CMP AL,'N'
+    JNE CONFIRM_TEST4
+    JMP CANCEL_BOOKING
+
+CONFIRM_TEST4:
+    CMP AL,'n'
+    JNE CONFIRM_BAD
+    JMP CANCEL_BOOKING
+
+CONFIRM_BAD:
+	MOV AH,09H
+    LEA DX,INVALID_MSG
+    INT 21H
+    JMP CONFIRM_START
+
+
+; SAVE BOOKING
+
+SAVE_BOOKING:
+    MOV AL,VENUE
+    DEC AL
+    MOV BL,6
+    MUL BL
+    MOV BL,TIME_SLOT
+    DEC BL
+    MOV BH,0
+    ADD AX,BX
+    MOV SI,AX
+    MOV AL,CURRENT_USER_ID
+    MOV BOOKINGS[SI],AL
+    LEA DX,BOOK_OK
+    MOV AH,09H
+    INT 21H
+    JMP BOOKING_DONE
+
+
+; CANCEL BOOKING
+
+CANCEL_BOOKING:
+    MOV AH,09H
+    LEA DX,CANCEL_MSG
+    INT 21H
+    JMP BOOKING_DONE
+
+
+; BOOKING DONE
+
+BOOKING_DONE:
+    CMP USER_TYPE,1
+    JNE BOOKING_MEMBER
+    JMP BOOKING_ADMIN
+
+BOOKING_MEMBER:
+    JMP MEMBER_START
+
+BOOKING_ADMIN:
+    JMP ADMIN_START
+
+
+; HISTORY DISPLAY ROUTINES
+; DISPLAY_BOOKINGS_ALL
+
+DISPLAY_BOOKINGS_ALL PROC
+    MOV CX,5
+    MOV BH,1
+
+VENUE_LOOP_ALL:
+    PUSH CX
+    MOV CX,6
+    MOV BL,1
+
+TIME_LOOP_ALL:
+
+    MOV AL,BH  ; calculate index
+    DEC AL
+    MOV DL,6
+    MUL DL
+    MOV DL,BL
+    DEC DL
+    ADD AL,DL
+    MOV AH,0
+    MOV SI,AX
+
+    MOV AL,BOOKINGS[SI]
+    CMP AL,0
+    JE SKIP_ENTRY_ALL
+
+; print venue and time
+    CALL PRINT_BOOKING_ENTRY
+
+; print who booked (now displays username)
+    MOV AL,BOOKINGS[SI]
+    CMP AL,1
+    JE PRINT_ADMIN_LABEL
+    CMP AL,2
+    JE PRINT_MEMBER_LABEL
+    JMP SKIP_WHO
+
+PRINT_ADMIN_LABEL:
+    MOV AH,09H
+    LEA DX,USER_ADMIN     
+    INT 21H
+    JMP SKIP_WHO
+
+PRINT_MEMBER_LABEL:
+    MOV AH,09H
+    LEA DX,USER_MEMBER    
+    INT 21H
+
+SKIP_WHO:
+
+    MOV DL,10
+    MOV AH,02H
+    INT 21H
+    MOV DL,13
+    INT 21H
+
+SKIP_ENTRY_ALL:
+    INC BL
+    LOOP TIME_LOOP_ALL
+    POP CX
+    INC BH
+    LOOP VENUE_LOOP_ALL
+
+    RET
+DISPLAY_BOOKINGS_ALL ENDP
+
+; DISPLAY_BOOKINGS_USER 
+DISPLAY_BOOKINGS_USER PROC
+    MOV CX,5
+    MOV BH,1
+
+VENUE_LOOP_USER:
+    PUSH CX
+    MOV CX,6
+    MOV BL,1
+
+TIME_LOOP_USER:
+    MOV AL,BH
+    DEC AL
+    MOV DL,6
+    MUL DL
+    MOV DL,BL
+    DEC DL
+    ADD AL,DL
+    MOV AH,0
+    MOV SI,AX
+
+    MOV AL,BOOKINGS[SI]
+    CMP AL,CURRENT_USER_ID
+    JNE SKIP_ENTRY_USER
+
+    CALL PRINT_BOOKING_ENTRY
+
+SKIP_ENTRY_USER:
+    INC BL
+    LOOP TIME_LOOP_USER
+    POP CX
+    INC BH
+    LOOP VENUE_LOOP_USER
+
+    RET
+DISPLAY_BOOKINGS_USER ENDP
+
+; PRINT_BOOKING_ENTRY 
+PRINT_BOOKING_ENTRY PROC
+    PUSH AX
+    PUSH BX
+    PUSH CX
+    PUSH DX
+    PUSH SI
+
+    MOV AH,09H
+    LEA DX,ENTRY_MSG
+    INT 21H
+
+; get venue name
+    MOV AL,BH
+    DEC AL
+    MOV AH,0
+    MOV SI,AX
+    ADD SI,SI
+    MOV DX,VENUE_OFFSETS[SI]
+    MOV AH,09H
+    INT 21H
+
+    MOV AH,09H
+    LEA DX,TIME_MSG
+    INT 21H
+
+; get time name
+    MOV AL,BL
+    DEC AL
+    MOV AH,0
+    MOV SI,AX
+    ADD SI,SI
+    MOV DX,TIME_OFFSETS[SI]
+    MOV AH,09H
+    INT 21H
+
+; newline
+    MOV DL,10
+    MOV AH,02H
+    INT 21H
+    MOV DL,13
+    INT 21H
+
+    POP SI
+    POP DX
+    POP CX
+    POP BX
+    POP AX
+    RET
+PRINT_BOOKING_ENTRY ENDP
+
+; ADMIN MANAGEMENT 
+
+ADMIN_MANAGE:
+    CALL CLEAR_SCREEN
+    MOV AH,09H
+    LEA DX,MANAGE_MSG
+    INT 21H
+    MOV AH,01H
+    INT 21H
+
+    CMP AL,'1'
+    JNE ADMIN_MANAGE_NOT1
+    JMP ADMIN_MANAGE_EDIT_VENUE
+ADMIN_MANAGE_NOT1:
+    CMP AL,'2'
+    JNE ADMIN_MANAGE_NOT2
+    JMP ADMIN_MANAGE_EDIT_TIME
+ADMIN_MANAGE_NOT2:
+    CMP AL,'3'
+    JNE ADMIN_MANAGE_NOT3
+    JMP ADMIN_START
+ADMIN_MANAGE_NOT3:
+    JMP ADMIN_MANAGE_BAD
+
+ADMIN_MANAGE_EDIT_VENUE:
+    CALL GET_VENUE_NUMBER
+    CMP AL,0
+    JE ADMIN_MANAGE_BAD
+    ; prompt for new name
+    MOV AH,09H
+    LEA DX,EDIT_VENUE_MSG
+    INT 21H
+    MOV AH,0AH
+    LEA DX,NEW_NAME
+    INT 21H
+    ; copy to selected venue
+    MOV BL,AL          ; venue index 1..5
+    DEC BL
+    MOV BH,0
+    MOV SI, OFFSET VENUE_OFFSETS
+    ADD SI, BX
+    ADD SI, BX          ; because DW
+    MOV DI, [SI]       ; offset of venue string
+    CALL COPY_NEW_NAME
+    JMP ADMIN_MANAGE
+
+ADMIN_MANAGE_EDIT_TIME:
+    CALL GET_TIME_NUMBER
+    CMP AL,0
+    JE ADMIN_MANAGE_BAD
+    MOV AH,09H
+    LEA DX,EDIT_TIME_MSG
+    INT 21H
+    MOV AH,0AH
+    LEA DX,NEW_NAME
+    INT 21H
+    MOV BL,AL          ; time index 1..6
+    DEC BL
+    MOV BH,0
+    MOV SI, OFFSET TIME_OFFSETS
+    ADD SI, BX
+    ADD SI, BX
+    MOV DI, [SI]
+    CALL COPY_NEW_NAME
+    JMP ADMIN_MANAGE
+
+ADMIN_MANAGE_BAD:
+    MOV AH,09H
+    LEA DX,INVALID_MSG
+    INT 21H
+    JMP ADMIN_MANAGE
+
+
+; Helper: GET_VENUE_NUMBER - reads digit 1..5, returns AL=0 on error
+GET_VENUE_NUMBER PROC
+    PUSH DX
+    PUSH BX
+    MOV AH,09H
+    LEA DX, MANAGE_MSG   
+          
+    MOV AH,01H
+    INT 21H
+    CMP AL,'1'
+    JB GET_VENUE_NUM_BAD
+    CMP AL,'5'
+    JA GET_VENUE_NUM_BAD
+    SUB AL,'0'
+    POP BX
+    POP DX
+    RET
+GET_VENUE_NUM_BAD:
+    MOV AL,0
+    POP BX
+    POP DX
+    RET
+GET_VENUE_NUMBER ENDP
+
+; Helper: GET_TIME_NUMBER - reads digit 1..6, returns AL=0 on error
+GET_TIME_NUMBER PROC
+    PUSH DX
+    MOV AH,01H
+    INT 21H
+    CMP AL,'1'
+    JB GET_TIME_NUM_BAD
+    CMP AL,'6'
+    JA GET_TIME_NUM_BAD
+    SUB AL,'0'
+    POP DX
+    RET
+GET_TIME_NUM_BAD:
+    MOV AL,0
+    POP DX
+    RET
+GET_TIME_NUMBER ENDP
+
+
+; COPY_NEW_NAME
+
+COPY_NEW_NAME PROC
+    PUSH SI
+    PUSH DI
+    PUSH CX
+    PUSH AX
+    LEA SI, NEW_NAME+2   ; actual input
+    MOV CX, 0
+COPY_LOOP:
+    MOV AL, [SI]
+    CMP AL, 13          ; DOS ends with CR
+    JE COPY_DONE
+    MOV [DI], AL
+    INC SI
+    INC DI
+    INC CX
+    CMP CX, 20          ; max 20 chars
+    JAE COPY_DONE
+    JMP COPY_LOOP
+COPY_DONE:
+    MOV BYTE PTR [DI], '$'   ; terminate
+    POP AX
+    POP CX
+    POP DI
+    POP SI
+    RET
+COPY_NEW_NAME ENDP
+
+
+; HELPER: PRINT_NUM (for admin report)
+
+PRINT_NUM PROC
+    PUSH AX
+    PUSH BX
+    PUSH CX
+    PUSH DX
+    MOV AH, 0
+    MOV CL, 10
+    DIV CL
+    MOV BL, AH
+    MOV DL, AL
+    ADD DL, '0'
+    MOV AH, 02H
+    INT 21H
+    MOV DL, BL
+    ADD DL, '0'
+    MOV AH, 02H
+    INT 21H
+    POP DX
+    POP CX
+    POP BX
+    POP AX
+    RET
+PRINT_NUM ENDP
+
+
+; CLEAR SCREEN
+
+CLEAR_SCREEN PROC
+    PUSH AX
+    PUSH BX
+    PUSH CX
+    PUSH DX
+    MOV AX,0600H
+    MOV BH,07H
+    MOV CX,0000H
+    MOV DX,184FH
+    INT 10H
+    MOV AH,02H
+    MOV BH,00H
+    MOV DH,00H
+    MOV DL,00H
+    INT 10H
+    POP DX
+    POP CX
+    POP BX
+    POP AX
+    RET
+CLEAR_SCREEN ENDP
+
+
+; PROGRAM EXIT
+
+MAIN_EXIT:
+    MOV AH,4CH
+    MOV AL,00H
+    INT 21H
+
+MAIN ENDP
+
+END MAIN
